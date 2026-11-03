@@ -38,6 +38,8 @@ Config file: `$RIX_CONFIG`, or `$XDG_CONFIG_HOME/rix/config.toml` (default `~/.c
 
 ## Recipes
 
+The `zlib` and `hello` recipes are test/example recipes, not real packages. There are no real recipes yet.
+
 `recipes/<name>/` contains:
 - `package.toml`: `name` (must match the directory), `version`, optional `description`, `source` and `sha256` (parallel lists, same length), `depends` (runtime, and also needed for the build), and `makedepends` (build only). Dependencies are plain names, with no version constraints. A source containing `://` is downloaded. Anything else is a file in the recipe directory, such as a patch.
 - `build`: a bash script run with `bash -e`, normally adapted from BLFS. It must use `--prefix="$PREFIX"` (and preferably `--sysconfdir="$SYSCONFDIR"`, `--localstatedir="$LOCALSTATEDIR"`) and install with `DESTDIR="$PKG"`. Inside the staging tree, paths are `"$PKG$PREFIX/..."`. Rix doesn't know about build systems.

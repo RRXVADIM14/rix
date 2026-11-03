@@ -16,7 +16,7 @@ rix lives in its own prefix (`/opt/rix` by default), next to whatever system you
 
 With prefix `/usr`, rix becomes the system package manager of a Linux From Scratch system. One tool covers both cases.
 
-> **Status:** early and experimental. The core works and is tested on throwaway recipes, but there are only two real recipes so far (`zlib`, `hello`).
+> **Status:** early and experimental. The core works and is tested on throwaway recipes, but there are no real recipes yet. `zlib` and `hello` in `recipes/` are test recipes.
 
 ## Features
 
@@ -43,7 +43,7 @@ cd rix
 # One-time setup: create the prefix and give it to your user (the only sudo step)
 sudo mkdir -p /opt/rix && sudo chown $USER: /opt/rix
 
-./rix install hello            # build and install into /opt/rix
+./rix install hello            # build and install the test recipe into /opt/rix
 eval "$(./rix env)"            # add /opt/rix/bin etc. to your shell (put this in ~/.bashrc)
 hello
 ```
@@ -72,7 +72,7 @@ Global options go before the command: `--prefix DIR` (or `$RIX_PREFIX`) and `--r
 
 ## Writing a recipe
 
-A recipe is a directory `recipes/<name>/` with two files.
+A recipe is a directory `recipes/<name>/` with two files. The example below is the test recipe `zlib`.
 
 `package.toml`:
 
