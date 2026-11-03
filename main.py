@@ -11,11 +11,12 @@ import tarfile
 import time
 import tomllib
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 BASE_DIR = Path(__file__).resolve().parent
 # Recipes: one directory per package with package.toml + build script
@@ -40,6 +41,9 @@ PKGINFO_NAME = ".PKGINFO.json"
 DEFAULT_CFLAGS = "-O2 -pipe -march=x86-64-v2"
 
 USE_FLAG_RE = re.compile(r"[a-z0-9][a-z0-9_+-]*")
+# Names and versions become directory names (build/<name>-<version>, which is
+# rmtree'd), so no "/" and no leading "." are allowed.
+NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]*")
 
 # Gentoo-style helpers available in every build script. Use them with `if`
 # or $(...): a bare `use foo && cmd` as the last line would fail the build.
@@ -261,6 +265,8 @@ def is_inside(path, dirs):
 # ------------------------------------------------------------------ recipes
 
 def load_recipe(name):
+    if not NAME_RE.fullmatch(name):
+        raise RixError(f"Invalid package name: {name!r}")
     recipe_dir = RECIPES_DIR / name
     meta_file = recipe_dir / "package.toml"
 
@@ -280,6 +286,13 @@ def load_recipe(name):
     if recipe["name"] != name:
         raise RixError(
             f"{meta_file}: name '{recipe['name']}' does not match directory '{name}'"
+        )
+
+    version = recipe["version"]
+    if not isinstance(version, str) or not NAME_RE.fullmatch(version):
+        raise RixError(
+            f"{meta_file}: version must be a string like \"1.3.1\" "
+            f"(letters, digits, . _ + -), got {version!r}"
         )
 
     recipe.setdefault("description", "")
@@ -429,12 +442,11 @@ def resolve(names, deps_of, ctx):
             cycle = path[path.index(name):] + [name]
             raise RixError("Dependency cycle: " + " -> ".join(cycle))
 
-        try:
-            recipe = load_recipe(name)
-        except RixError:
-            if path:
-                raise RixError(f"{path[-1]} depends on {name}, but there is no recipe for it")
-            raise
+        # Only a missing recipe gets the "depends on" message; a broken one
+        # must show its real error.
+        if path and not (RECIPES_DIR / name / "package.toml").is_file():
+            raise RixError(f"{path[-1]} depends on {name}, but there is no recipe for it")
+        recipe = load_recipe(name)
 
         state[name] = "visiting"
         for dep in deps_of(recipe, ctx):
@@ -477,8 +489,11 @@ def fetch_source(recipe, source, expected):
         check_sha256(path, expected)
         return path
 
+    # Name from the URL path only: no ?query, and never "" or ".."
+    filename = PurePosixPath(urllib.parse.urlsplit(source).path).name
+    if filename in ("", ".", ".."):
+        raise RixError(f"Cannot get a file name from source URL: {source}")
     SOURCES_DIR.mkdir(exist_ok=True)
-    filename = source.rstrip("/").rsplit("/", 1)[-1]
     dest = SOURCES_DIR / filename
 
     if dest.is_file() and sha256_of(dest) == expected:
@@ -875,8 +890,10 @@ def install_package(archive, ctx, explicit=True, force=False):
     dirs = created_dirs
     if old:
         new_files = set(info["files"])
+        # A dropped file may now belong to another package (after --force)
+        others = {f for p in db["packages"] if p is not old for f in p["files"]}
         for path in old["files"]:
-            if path not in new_files:
+            if path not in new_files and path not in others:
                 remove_path(ctx, path)
         package_dirs = {"/" + m.name for m in members if m.isdir()}
         kept_dirs = [d for d in old.get("dirs", []) if d in package_dirs]
