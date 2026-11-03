@@ -1,0 +1,6 @@
+./configure --prefix="$PREFIX" $(use_enable nls)
+make
+make DESTDIR="$PKG" install
+
+# The info directory index is shared by all packages; don't ship it
+rm -f "$PKG$PREFIX/share/info/dir"

@@ -1,0 +1,8 @@
+./configure --prefix="$PREFIX"
+make
+make DESTDIR="$PKG" install
+
+# LFS removes the static library; keep it only with USE=static
+if ! use static; then
+    rm -f "$PKG$PREFIX/lib/libz.a"
+fi

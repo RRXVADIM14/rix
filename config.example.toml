@@ -1,0 +1,24 @@
+# Copy to ~/.config/rix/config.toml (everything is optional).
+# Works like Gentoo's make.conf + package.use + package.env.
+
+prefix = "/opt/rix"
+
+# Global compile settings (make.conf: CFLAGS, CXXFLAGS, LDFLAGS, MAKEOPTS)
+cflags = "-O2 -pipe -march=x86-64-v2"   # never -march=native if packages go to another machine
+# cxxflags = "..."                      # defaults to cflags
+# ldflags = "-Wl,-O1"
+# jobs = 8                              # defaults to the number of CPUs
+
+# Global USE flags: "flag" enables, "-flag" disables.
+# Flags that a recipe doesn't have are simply ignored.
+use = ["-doc"]
+
+# Per-package settings (package.use + package.env)
+[package.zlib]
+use = ["static"]
+cflags = "-O3 -pipe -march=x86-64-v2"
+
+[package.hello]
+use = ["-nls"]
+# Extra environment variables for the build script
+env = { HELLO_EXAMPLE = "1" }

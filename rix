@@ -1,0 +1,4 @@
+#!/bin/sh
+# Resolve the real location of this script (works through symlinks)
+RIX_DIR=$(dirname "$(readlink -f "$0")")
+exec python3 "$RIX_DIR/main.py" "$@"

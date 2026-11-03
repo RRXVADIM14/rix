@@ -1,0 +1,7 @@
+# Build artifacts and caches
+build/
+sources/
+packages/
+rootfs/
+__pycache__/
+*.part
